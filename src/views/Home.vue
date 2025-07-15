@@ -1,7 +1,7 @@
 <template>
   <div class="home">
     <Header />
-    
+
     <!-- 轮播图 -->
     <section class="hero">
       <div class="hero-content">
@@ -16,14 +16,14 @@
         <img src="../img/DSCF9611.jpg" alt="Hero Image" />
       </div>
     </section>
-    
+
     <!-- 特色功能 -->
     <section class="features">
       <div class="container">
         <h2>我们的优势</h2>
         <div class="features-grid">
-          <div 
-            v-for="feature in content.home.features" 
+          <div
+            v-for="feature in content.home.features"
             :key="feature.title"
             class="feature-item"
           >
@@ -36,14 +36,14 @@
         </div>
       </div>
     </section>
-    
+
     <!-- 产品展示 -->
     <section class="products-preview" v-if="products.length > 0">
       <div class="container">
         <h2>产品展示</h2>
         <div class="products-grid">
-          <div 
-            v-for="product in products.slice(0, 4)" 
+          <div
+            v-for="product in products.slice(0, 4)"
             :key="product.id"
             class="product-item"
           >
@@ -57,17 +57,13 @@
         </div>
       </div>
     </section>
-    
+
     <!-- 新闻动态 -->
     <section class="news-preview" v-if="news.length > 0">
       <div class="container">
         <h2>新闻动态</h2>
         <div class="news-grid">
-          <div 
-            v-for="item in news.slice(0, 3)" 
-            :key="item.id"
-            class="news-item"
-          >
+          <div v-for="item in news.slice(0, 3)" :key="item.id" class="news-item">
             <div class="news-date">{{ formatDate(item.createTime) }}</div>
             <h3>{{ item.title }}</h3>
             <p>{{ item.summary }}</p>
@@ -78,38 +74,38 @@
         </div>
       </div>
     </section>
-    
+
     <Footer />
   </div>
 </template>
 
 <script>
-import Header from '@/components/Header.vue'
-import Footer from '@/components/Footer.vue'
-import { useContentStore } from '@/stores/content'
+import Header from "@/components/Header.vue";
+import Footer from "@/components/Footer.vue";
+import { useContentStore } from "@/stores/content";
 
 export default {
-  name: 'Home',
+  name: "Home",
   components: {
     Header,
-    Footer
+    Footer,
   },
   setup() {
-    const contentStore = useContentStore()
-    
+    const contentStore = useContentStore();
+
     const formatDate = (dateStr) => {
-      const date = new Date(dateStr)
-      return date.toLocaleDateString('zh-CN')
-    }
-    
+      const date = new Date(dateStr);
+      return date.toLocaleDateString("zh-CN");
+    };
+
     return {
       content: contentStore.content,
       products: contentStore.products,
       news: contentStore.news,
-      formatDate
-    }
-  }
-}
+      formatDate,
+    };
+  },
+};
 </script>
 
 <style scoped>
@@ -185,10 +181,11 @@ export default {
 }
 
 .hero-image img {
-  width: 100%;
-  height: 400px;
+  width: 400px;
+  height: 200px;
   object-fit: cover;
   border-radius: 10px;
+  margin-right: 50px;
 }
 
 .features {
@@ -337,15 +334,15 @@ export default {
     grid-template-columns: 1fr;
     text-align: center;
   }
-  
+
   .hero-content h1 {
     font-size: 36px;
   }
-  
+
   .hero-buttons {
     justify-content: center;
   }
-  
+
   .features-grid,
   .products-grid,
   .news-grid {

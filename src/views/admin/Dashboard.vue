@@ -93,50 +93,24 @@
         <h3>数据存储状态</h3>
         <div class="status-card">
           <div class="status-item">
-            <span class="label">网络状态:</span>
-            <el-tag :type="storageStatus.isOnline ? 'success' : 'danger'">
-              {{ storageStatus.isOnline ? '在线' : '离线' }}
-            </el-tag>
+            <span class="label">存储类型:</span>
+            <el-tag type="success">本地存储</el-tag>
           </div>
           
           <div class="status-item">
-            <span class="label">云存储:</span>
-            <el-tag :type="storageStatus.useCloud ? 'success' : 'info'">
-              {{ storageStatus.useCloud ? '已启用' : '未启用' }}
-            </el-tag>
-          </div>
-          
-          <div class="status-item">
-            <span class="label">自动同步:</span>
-            <el-tag :type="storageStatus.autoSync ? 'success' : 'warning'">
-              {{ storageStatus.autoSync ? '开启' : '关闭' }}
+            <span class="label">存储状态:</span>
+            <el-tag :type="storageStatus.isAvailable ? 'success' : 'danger'">
+              {{ storageStatus.isAvailable ? '正常' : '不可用' }}
             </el-tag>
           </div>
           
           <div class="status-actions">
             <el-button 
               size="small" 
-              type="primary" 
-              @click="toggleCloudStorage"
-              :disabled="!storageStatus.isOnline"
+              type="danger" 
+              @click="handleClearData"
             >
-              {{ storageStatus.useCloud ? '禁用云存储' : '启用云存储' }}
-            </el-button>
-            
-            <el-button 
-              size="small" 
-              @click="handleSyncToCloud"
-              :disabled="!storageStatus.useCloud || !storageStatus.isOnline"
-            >
-              上传到云端
-            </el-button>
-            
-            <el-button 
-              size="small" 
-              @click="handleSyncFromCloud"
-              :disabled="!storageStatus.useCloud || !storageStatus.isOnline"
-            >
-              从云端下载
+              清空所有数据
             </el-button>
           </div>
         </div>
@@ -147,7 +121,7 @@
 
 <script>
 import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useContentStore } from '@/stores/content'
 import { 
   Box, 
@@ -192,39 +166,22 @@ export default {
       return date.toLocaleDateString('zh-CN') + ' ' + date.toLocaleTimeString('zh-CN')
     }
 
-    const toggleCloudStorage = () => {
-      if (contentStore.storageStatus.useCloud) {
-        contentStore.disableCloudStorage()
-        ElMessage.info('云存储已禁用')
-      } else {
-        contentStore.enableCloudStorage()
-        ElMessage.success('云存储已启用')
-      }
-    }
-
-    const handleSyncToCloud = async () => {
+    const handleClearData = async () => {
       try {
-        const success = await contentStore.syncToCloud()
-        if (success) {
-          ElMessage.success('数据已上传到云端')
-        } else {
-          ElMessage.error('上传失败，请检查网络连接')
-        }
+        await ElMessageBox.confirm('确定要清空所有数据吗？此操作不可恢复。', '警告', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        })
+        
+        contentStore.clearAllData()
+        messages.value = []
+        visits.value = 0
+        localStorage.removeItem('site_visits')
+        
+        ElMessage.success('所有数据已清空')
       } catch (error) {
-        ElMessage.error('上传失败: ' + error.message)
-      }
-    }
-
-    const handleSyncFromCloud = async () => {
-      try {
-        const success = await contentStore.syncFromCloud()
-        if (success) {
-          ElMessage.success('数据已从云端下载')
-        } else {
-          ElMessage.error('下载失败，请检查网络连接')
-        }
-      } catch (error) {
-        ElMessage.error('下载失败: ' + error.message)
+        // 用户取消操作
       }
     }
     
@@ -235,9 +192,7 @@ export default {
       visits,
       storageStatus: contentStore.storageStatus,
       formatDate,
-      toggleCloudStorage,
-      handleSyncToCloud,
-      handleSyncFromCloud
+      handleClearData
     }
   }
 }

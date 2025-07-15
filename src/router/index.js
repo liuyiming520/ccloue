@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
 
 // 前台页面
 import Home from '@/views/Home.vue'
@@ -100,13 +99,41 @@ const router = createRouter({
 
 // 路由守卫
 router.beforeEach((to, from, next) => {
-  const authStore = useAuthStore()
-  
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    next('/admin/login')
-  } else {
-    next()
+  // 检查是否需要认证
+  if (to.meta.requiresAuth) {
+    // 检查token是否存在
+    const token = localStorage.getItem('admin_token')
+    if (!token) {
+      next('/admin/login')
+      return
+    }
+    
+    // 检查token是否有效（简单检查）
+    try {
+      const user = JSON.parse(localStorage.getItem('admin_user') || '{}')
+      if (!user.id) {
+        next('/admin/login')
+        return
+      }
+    } catch (error) {
+      // 如果解析失败，清除无效数据并重定向到登录页
+      localStorage.removeItem('admin_token')
+      localStorage.removeItem('admin_user')
+      next('/admin/login')
+      return
+    }
   }
+  
+  // 如果已经认证但访问登录页，重定向到管理首页
+  if (to.path === '/admin/login') {
+    const token = localStorage.getItem('admin_token')
+    if (token) {
+      next('/admin')
+      return
+    }
+  }
+  
+  next()
 })
 
 export default router

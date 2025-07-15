@@ -1,131 +1,66 @@
-// 混合存储管理器：本地存储 + 云端备份
-import GitHubStorage from './github-storage'
-
-const STORAGE_CONFIG = {
-  useCloud: false, // 是否启用云存储
-  autoSync: true,  // 是否自动同步
-  syncInterval: 30000 // 同步间隔30秒
-}
-
-class HybridStorage {
+// 本地存储管理器
+class LocalStorage {
   constructor() {
-    this.isOnline = navigator.onLine
-    this.syncTimer = null
-    this.listeners = new Set()
-    
-    // 监听网络状态
-    window.addEventListener('online', () => {
-      this.isOnline = true
-      this.notifyListeners('online')
-    })
-    
-    window.addEventListener('offline', () => {
-      this.isOnline = false
-      this.notifyListeners('offline')
-    })
+    // 初始化默认数据
+    this.initDefaultData()
   }
 
-  // 添加状态监听器
-  addListener(callback) {
-    this.listeners.add(callback)
-  }
-
-  // 移除状态监听器
-  removeListener(callback) {
-    this.listeners.delete(callback)
-  }
-
-  // 通知监听器
-  notifyListeners(event) {
-    this.listeners.forEach(callback => callback(event))
-  }
-
-  // 启用云存储
-  enableCloud() {
-    STORAGE_CONFIG.useCloud = true
-    if (STORAGE_CONFIG.autoSync) {
-      this.startAutoSync()
+  // 初始化默认数据
+  initDefaultData() {
+    const defaultData = {
+      site_content: {
+        home: {
+          title: '欢迎来到我们公司',
+          subtitle: '专业的解决方案提供商',
+          description: '我们致力于为客户提供优质的产品和服务',
+          features: [
+            { title: '专业团队', description: '拥有多年行业经验的专业团队' },
+            { title: '优质服务', description: '7x24小时贴心服务' },
+            { title: '创新技术', description: '采用最新的技术解决方案' }
+          ]
+        },
+        about: {
+          title: '关于我们',
+          description: '公司成立于2020年，是一家专注于技术创新的现代化企业...',
+          mission: '致力于通过技术创新改善人们的生活',
+          vision: '成为行业领先的技术解决方案提供商',
+          values: ['诚信', '创新', '专业', '共赢']
+        },
+        contact: {
+          address: '北京市朝阳区某某大厦',
+          phone: '010-12345678',
+          email: 'contact@company.com',
+          workTime: '周一至周五 9:00-18:00'
+        }
+      },
+      site_products: [],
+      site_news: [],
+      contact_messages: []
     }
-  }
 
-  // 禁用云存储
-  disableCloud() {
-    STORAGE_CONFIG.useCloud = false
-    this.stopAutoSync()
-  }
-
-  // 开始自动同步
-  startAutoSync() {
-    if (this.syncTimer) return
-    
-    this.syncTimer = setInterval(() => {
-      if (this.isOnline && STORAGE_CONFIG.useCloud) {
-        this.syncToCloud()
+    // 如果本地没有数据，则设置默认值
+    Object.keys(defaultData).forEach(key => {
+      if (!localStorage.getItem(key)) {
+        localStorage.setItem(key, JSON.stringify(defaultData[key]))
       }
-    }, STORAGE_CONFIG.syncInterval)
+    })
   }
 
-  // 停止自动同步
-  stopAutoSync() {
-    if (this.syncTimer) {
-      clearInterval(this.syncTimer)
-      this.syncTimer = null
-    }
-  }
-
-  // 获取数据（优先本地，备选云端）
-  async getData(key) {
+  // 获取数据
+  getData(key) {
     try {
-      // 优先从本地获取
-      const localData = localStorage.getItem(key)
-      if (localData) {
-        return JSON.parse(localData)
-      }
-
-      // 如果启用云存储且在线，从云端获取
-      if (STORAGE_CONFIG.useCloud && this.isOnline) {
-        let cloudData = null
-        
-        switch (key) {
-          case 'site_content':
-            cloudData = await GitHubStorage.getContent()
-            break
-          case 'site_products':
-            cloudData = await GitHubStorage.getProducts()
-            break
-          case 'site_news':
-            cloudData = await GitHubStorage.getNews()
-            break
-          case 'contact_messages':
-            cloudData = await GitHubStorage.getMessages()
-            break
-        }
-        
-        if (cloudData) {
-          // 保存到本地缓存
-          localStorage.setItem(key, JSON.stringify(cloudData))
-          return cloudData
-        }
-      }
-
-      return null
+      const data = localStorage.getItem(key)
+      return data ? JSON.parse(data) : null
     } catch (error) {
       console.error('获取数据失败:', error)
       return null
     }
   }
 
-  // 保存数据（本地+云端）
-  async saveData(key, data) {
+  // 保存数据
+  saveData(key, data) {
     try {
-      // 保存到本地
       localStorage.setItem(key, JSON.stringify(data))
-      
-      // 如果启用云存储且在线，保存到云端
-      if (STORAGE_CONFIG.useCloud && this.isOnline) {
-        await this.saveToCloud(key, data)
-      }
-      
       return true
     } catch (error) {
       console.error('保存数据失败:', error)
@@ -133,82 +68,26 @@ class HybridStorage {
     }
   }
 
-  // 保存到云端
-  async saveToCloud(key, data) {
+  // 删除数据
+  deleteData(key) {
     try {
-      switch (key) {
-        case 'site_content':
-          await GitHubStorage.saveContent(data)
-          break
-        case 'site_products':
-          await GitHubStorage.saveProducts(data)
-          break
-        case 'site_news':
-          await GitHubStorage.saveNews(data)
-          break
-        case 'contact_messages':
-          await GitHubStorage.saveMessages(data)
-          break
-      }
-      
-      this.notifyListeners('sync_success')
+      localStorage.removeItem(key)
+      return true
     } catch (error) {
-      console.error('云端保存失败:', error)
-      this.notifyListeners('sync_error')
+      console.error('删除数据失败:', error)
+      return false
     }
   }
 
-  // 手动同步到云端
-  async syncToCloud() {
-    if (!STORAGE_CONFIG.useCloud || !this.isOnline) {
-      return false
-    }
-
+  // 清空所有数据
+  clearAll() {
     try {
       const keys = ['site_content', 'site_products', 'site_news', 'contact_messages']
-      
-      for (const key of keys) {
-        const localData = localStorage.getItem(key)
-        if (localData) {
-          await this.saveToCloud(key, JSON.parse(localData))
-        }
-      }
-      
-      this.notifyListeners('sync_complete')
+      keys.forEach(key => localStorage.removeItem(key))
+      this.initDefaultData()
       return true
     } catch (error) {
-      console.error('同步失败:', error)
-      this.notifyListeners('sync_error')
-      return false
-    }
-  }
-
-  // 从云端同步到本地
-  async syncFromCloud() {
-    if (!STORAGE_CONFIG.useCloud || !this.isOnline) {
-      return false
-    }
-
-    try {
-      const keys = [
-        { local: 'site_content', method: 'getContent' },
-        { local: 'site_products', method: 'getProducts' },
-        { local: 'site_news', method: 'getNews' },
-        { local: 'contact_messages', method: 'getMessages' }
-      ]
-
-      for (const { local, method } of keys) {
-        const cloudData = await GitHubStorage[method]()
-        if (cloudData) {
-          localStorage.setItem(local, JSON.stringify(cloudData))
-        }
-      }
-
-      this.notifyListeners('sync_complete')
-      return true
-    } catch (error) {
-      console.error('从云端同步失败:', error)
-      this.notifyListeners('sync_error')
+      console.error('清空数据失败:', error)
       return false
     }
   }
@@ -216,12 +95,10 @@ class HybridStorage {
   // 获取存储状态
   getStorageStatus() {
     return {
-      isOnline: this.isOnline,
-      useCloud: STORAGE_CONFIG.useCloud,
-      autoSync: STORAGE_CONFIG.autoSync,
-      syncInterval: STORAGE_CONFIG.syncInterval
+      storageType: 'local',
+      isAvailable: typeof Storage !== 'undefined'
     }
   }
 }
 
-export default new HybridStorage()
+export default new LocalStorage()

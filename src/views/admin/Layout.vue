@@ -61,7 +61,7 @@
               <span class="user-info">
                 <el-icon><User /></el-icon>
                 {{ authStore.user?.username }}
-                <el-icon class="el-icon--right"><arrow-down /></el-icon>
+                <el-icon class="el-icon--right"><ArrowDown /></el-icon>
               </span>
               <template #dropdown>
                 <el-dropdown-menu>

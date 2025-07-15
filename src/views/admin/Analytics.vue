@@ -214,13 +214,34 @@ export default {
     const topPages = computed(() => analyticsStore.getTopPages())
     
     // 获取设备类型统计数据
-    const deviceStats = computed(() => analyticsStore.getDeviceStats)
+    const deviceStats = computed(() => {
+      try {
+        return analyticsStore.getDeviceStats || []
+      } catch (error) {
+        console.error('获取设备统计失败:', error)
+        return []
+      }
+    })
     
     // 获取浏览器分布统计数据
-    const browserStats = computed(() => analyticsStore.getBrowserStats)
+    const browserStats = computed(() => {
+      try {
+        return analyticsStore.getBrowserStats || []
+      } catch (error) {
+        console.error('获取浏览器统计失败:', error)
+        return []
+      }
+    })
     
     // 获取流量来源统计数据
-    const trafficStats = computed(() => analyticsStore.getTrafficStats)
+    const trafficStats = computed(() => {
+      try {
+        return analyticsStore.getTrafficStats || []
+      } catch (error) {
+        console.error('获取流量统计失败:', error)
+        return []
+      }
+    })
 
     // 访问趋势图表配置
     const visitorTrendOption = computed(() => ({

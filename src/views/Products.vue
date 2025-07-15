@@ -20,7 +20,7 @@
             class="product-card"
           >
             <div class="product-image">
-              <img :src="product.image || '../img/DSCF96941.jpg'" :alt="product.name" />
+              <img :src="product.image || defaultProductImage" :alt="product.name" />
             </div>
             <div class="product-info">
               <h3>{{ product.name }}</h3>
@@ -48,6 +48,7 @@
 import Header from '@/components/Header.vue'
 import Footer from '@/components/Footer.vue'
 import { useContentStore } from '@/stores/content'
+import defaultProductImage from '@/img/DSCF96941.jpg'
 
 export default {
   name: 'Products',
@@ -59,7 +60,8 @@ export default {
     const contentStore = useContentStore()
     
     return {
-      products: contentStore.products
+      products: contentStore.products,
+      defaultProductImage
     }
   }
 }

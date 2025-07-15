@@ -95,8 +95,37 @@ function generateDailyData() {
   return data
 }
 
+// 安全地初始化状态
+const initializeAnalytics = () => {
+  try {
+    const stored = localStorage.getItem('site_analytics')
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      // 确保数据结构完整
+      return {
+        ...defaultAnalytics,
+        ...parsed,
+        visitors: {
+          ...defaultAnalytics.visitors,
+          ...parsed.visitors,
+          dailyData: parsed.visitors?.dailyData || defaultAnalytics.visitors.dailyData
+        },
+        pageViews: {
+          ...defaultAnalytics.pageViews,
+          ...parsed.pageViews,
+          pages: parsed.pageViews?.pages || defaultAnalytics.pageViews.pages
+        }
+      }
+    }
+    return defaultAnalytics
+  } catch (error) {
+    console.error('初始化统计数据失败:', error)
+    return defaultAnalytics
+  }
+}
+
 const state = reactive({
-  analytics: JSON.parse(localStorage.getItem('site_analytics')) || defaultAnalytics,
+  analytics: initializeAnalytics(),
   realTimeVisitors: 12,
   isTracking: true
 })
