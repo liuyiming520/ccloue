@@ -158,7 +158,7 @@
 </template>
 
 <script>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
@@ -200,145 +200,256 @@ export default {
     DataLine
   },
   setup() {
+    // 获取分析数据存储实例
     const analyticsStore = useAnalyticsStore()
-
-    // 获取访问趋势数据
+    
+    // 响应式数据：控制加载状态
+    const loading = ref(false)
+    
+    // 计算属性：获取各种统计数据
+    // 获取最近7天的访问趋势数据
     const visitorTrend = computed(() => analyticsStore.getVisitorTrend(7))
+    
+    // 获取热门页面排行（前5名）
     const topPages = computed(() => analyticsStore.getTopPages())
+    
+    // 获取设备类型统计数据
     const deviceStats = computed(() => analyticsStore.getDeviceStats)
+    
+    // 获取浏览器分布统计数据
     const browserStats = computed(() => analyticsStore.getBrowserStats)
+    
+    // 获取流量来源统计数据
     const trafficStats = computed(() => analyticsStore.getTrafficStats)
 
     // 访问趋势图表配置
     const visitorTrendOption = computed(() => ({
+      // 鼠标悬浮提示配置
       tooltip: {
-        trigger: 'axis'
+        trigger: 'axis', // 坐标轴触发
+        formatter: function (params) {
+          // 自定义提示内容格式
+          let result = params[0].name + '<br/>'
+          params.forEach(param => {
+            result += param.marker + param.seriesName + ': ' + param.value + '<br/>'
+          })
+          return result
+        }
       },
+      // 图例配置
       legend: {
-        data: ['访客', '页面浏览量']
+        data: ['访客', '页面浏览量'],
+        top: 10
       },
+      // 网格配置
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '3%',
+        containLabel: true
+      },
+      // X轴配置
       xAxis: {
         type: 'category',
-        data: visitorTrend.value.dates
+        data: visitorTrend.value.dates || [], // 防止undefined错误
+        axisTick: {
+          alignWithLabel: true
+        }
       },
+      // Y轴配置
       yAxis: {
-        type: 'value'
+        type: 'value',
+        minInterval: 1 // 确保Y轴显示整数
       },
+      // 数据系列配置
       series: [
         {
           name: '访客',
           type: 'line',
-          data: visitorTrend.value.visitors,
-          smooth: true,
-          itemStyle: { color: '#409eff' }
+          data: visitorTrend.value.visitors || [], // 防止undefined错误
+          smooth: true, // 平滑曲线
+          itemStyle: { color: '#409eff' },
+          lineStyle: { width: 2 }
         },
         {
           name: '页面浏览量',
           type: 'line',
-          data: visitorTrend.value.pageViews,
+          data: visitorTrend.value.pageViews || [], // 防止undefined错误
           smooth: true,
-          itemStyle: { color: '#67c23a' }
+          itemStyle: { color: '#67c23a' },
+          lineStyle: { width: 2 }
         }
       ]
     }))
 
-    // 设备分布图表配置
+    // 设备分布图表配置（环形饼图）
     const deviceChartOption = computed(() => ({
+      // 提示框配置
       tooltip: {
         trigger: 'item',
         formatter: '{a} <br/>{b}: {c} ({d}%)'
       },
+      // 图例配置
+      legend: {
+        orient: 'vertical',
+        left: 'left',
+        data: deviceStats.value.map(item => item.name) || []
+      },
+      // 数据系列配置
       series: [
         {
           name: '设备类型',
           type: 'pie',
-          radius: ['40%', '70%'],
-          data: deviceStats.value.map(item => ({
+          radius: ['40%', '70%'], // 环形饼图：内半径40%，外半径70%
+          avoidLabelOverlap: false,
+          data: (deviceStats.value || []).map(item => ({
             value: item.value,
             name: item.name
           })),
+          // 鼠标悬浮效果
           emphasis: {
             itemStyle: {
               shadowBlur: 10,
               shadowOffsetX: 0,
               shadowColor: 'rgba(0, 0, 0, 0.5)'
             }
+          },
+          // 标签配置
+          label: {
+            show: false,
+            position: 'center'
+          },
+          labelLine: {
+            show: false
           }
         }
       ]
     }))
 
-    // 流量来源图表配置
+    // 流量来源图表配置（普通饼图）
     const trafficChartOption = computed(() => ({
+      // 提示框配置
       tooltip: {
-        trigger: 'item'
+        trigger: 'item',
+        formatter: '{a} <br/>{b}: {c} ({d}%)'
       },
+      // 图例配置
+      legend: {
+        bottom: 10,
+        left: 'center',
+        data: trafficStats.value.map(item => item.name) || []
+      },
+      // 数据系列配置
       series: [
         {
           name: '流量来源',
           type: 'pie',
-          radius: '50%',
-          data: trafficStats.value.map(item => ({
+          radius: '50%', // 饼图半径
+          center: ['50%', '45%'], // 饼图位置
+          data: (trafficStats.value || []).map(item => ({
             value: item.value,
             name: item.name
           })),
+          // 鼠标悬浮效果
           emphasis: {
             itemStyle: {
               shadowBlur: 10,
               shadowOffsetX: 0,
               shadowColor: 'rgba(0, 0, 0, 0.5)'
             }
+          },
+          // 标签配置
+          label: {
+            show: true,
+            formatter: '{b}: {d}%'
           }
         }
       ]
     }))
 
-    // 导出数据
+    // 导出数据功能
     const exportData = () => {
-      analyticsStore.exportData('json')
-      ElMessage.success('数据导出成功！')
+      try {
+        loading.value = true
+        analyticsStore.exportData('json')
+        ElMessage.success('数据导出成功！')
+      } catch (error) {
+        ElMessage.error('导出失败：' + error.message)
+      } finally {
+        loading.value = false
+      }
     }
 
-    // 生成报告
+    // 生成统计报告
     const generateReport = () => {
-      const endDate = new Date()
-      const startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000)
-      
-      const report = analyticsStore.generateReport(startDate, endDate)
-      console.log('生成的报告:', report)
-      
-      ElMessage.success('报告生成成功！请查看控制台。')
+      try {
+        loading.value = true
+        const endDate = new Date()
+        const startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000) // 7天前
+        
+        const report = analyticsStore.generateReport(startDate, endDate)
+        console.log('生成的报告:', report)
+        
+        ElMessage.success('报告生成成功！请查看控制台。')
+      } catch (error) {
+        ElMessage.error('报告生成失败：' + error.message)
+      } finally {
+        loading.value = false
+      }
     }
 
-    // 清空数据
+    // 清空所有统计数据
     const clearData = () => {
       ElMessageBox.confirm('确定要清空所有统计数据吗？此操作不可恢复。', '警告', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        analyticsStore.clearData()
-        ElMessage.success('数据已清空！')
+        try {
+          analyticsStore.clearData()
+          ElMessage.success('数据已清空！')
+        } catch (error) {
+          ElMessage.error('清空失败：' + error.message)
+        }
       }).catch(() => {
         ElMessage.info('已取消清空操作')
       })
     }
 
+    // 组件挂载时的初始化操作
     onMounted(() => {
-      // 启动实时数据跟踪
-      analyticsStore.startRealTimeTracking()
+      try {
+        // 启动实时数据跟踪（模拟实时访客数变化）
+        analyticsStore.startRealTimeTracking()
+        
+        // 模拟初始化一些统计数据
+        analyticsStore.trackPageView('/', '首页')
+        analyticsStore.trackPageView('/about', '关于我们')
+        analyticsStore.trackPageView('/products', '产品页面')
+        
+        console.log('数据统计系统初始化完成')
+      } catch (error) {
+        console.error('数据统计初始化失败:', error)
+      }
     })
 
+    // 返回组件需要的所有数据和方法
     return {
+      // 数据
       analytics: analyticsStore.analytics,
       realTimeStats: analyticsStore.getRealTimeStats,
+      loading,
       topPages,
       deviceStats,
       browserStats,
       trafficStats,
+      
+      // 图表配置
       visitorTrendOption,
       deviceChartOption,
       trafficChartOption,
+      
+      // 方法
       exportData,
       generateReport,
       clearData

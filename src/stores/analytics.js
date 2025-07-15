@@ -1,19 +1,28 @@
 import { reactive, computed } from 'vue'
 
-// 访问统计数据结构
+/**
+ * 网站数据统计分析系统
+ * 功能：访客统计、页面分析、设备分析、转化跟踪
+ * 存储：localStorage本地存储
+ * 特点：实时统计、可视化图表、数据导出
+ */
+
+// 默认统计数据结构
 const defaultAnalytics = {
+  // 访客统计数据
   visitors: {
-    total: 1234,
-    today: 56,
-    yesterday: 78,
-    thisWeek: 389,
-    thisMonth: 1567,
-    dailyData: [] // 30天数据
+    total: 1234,        // 总访客数
+    today: 56,          // 今日访客
+    yesterday: 78,      // 昨日访客
+    thisWeek: 389,      // 本周访客
+    thisMonth: 1567,    // 本月访客
+    dailyData: generateDailyData() // 最近30天每日数据
   },
+  // 页面浏览量统计
   pageViews: {
-    total: 5678,
-    today: 123,
-    pages: [
+    total: 5678,        // 总浏览量
+    today: 123,         // 今日浏览量
+    pages: [            // 各页面浏览量统计
       { path: '/', views: 2345, title: '首页' },
       { path: '/products', views: 1234, title: '产品页面' },
       { path: '/about', views: 890, title: '关于我们' },
@@ -21,24 +30,28 @@ const defaultAnalytics = {
       { path: '/contact', views: 345, title: '联系我们' }
     ]
   },
+  // 设备类型统计（百分比）
   devices: {
-    desktop: 45,
-    mobile: 40,
-    tablet: 15
+    desktop: 45,        // 桌面设备
+    mobile: 40,         // 移动设备
+    tablet: 15          // 平板设备
   },
+  // 浏览器分布统计（百分比）
   browsers: {
-    chrome: 65,
-    firefox: 15,
-    safari: 12,
-    edge: 5,
-    other: 3
+    chrome: 65,         // Chrome浏览器
+    firefox: 15,        // Firefox浏览器
+    safari: 12,         // Safari浏览器
+    edge: 5,            // Edge浏览器
+    other: 3            // 其他浏览器
   },
+  // 流量来源统计（百分比）
   traffic: {
-    direct: 40,
-    search: 35,
-    social: 15,
-    referral: 10
+    direct: 40,         // 直接访问
+    search: 35,         // 搜索引擎
+    social: 15,         // 社交媒体
+    referral: 10        // 外部链接
   },
+  // 地理位置分布
   geographic: [
     { province: '北京', visitors: 234 },
     { province: '上海', visitors: 189 },
@@ -46,12 +59,40 @@ const defaultAnalytics = {
     { province: '江苏', visitors: 123 },
     { province: '浙江', visitors: 98 }
   ],
-  events: [], // 用户行为事件
+  // 用户行为事件记录
+  events: [],
+  // 转化统计
   conversions: {
-    contactForm: 23,
-    phoneCall: 15,
-    productInquiry: 45
+    contactForm: 23,    // 联系表单提交
+    phoneCall: 15,      // 电话咨询
+    productInquiry: 45  // 产品询价
   }
+}
+
+/**
+ * 生成最近30天的模拟数据
+ * @returns {Array} 每日访客数据数组
+ */
+function generateDailyData() {
+  const data = []
+  const now = new Date()
+  
+  for (let i = 29; i >= 0; i--) {
+    const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000)
+    const dateStr = date.toISOString().split('T')[0]
+    
+    // 模拟访客数据（随机生成）
+    const visitors = Math.floor(Math.random() * 50) + 20
+    const pageViews = Math.floor(visitors * (Math.random() * 2 + 1.5))
+    
+    data.push({
+      date: dateStr,
+      visitors: visitors,
+      pageViews: pageViews
+    })
+  }
+  
+  return data
 }
 
 const state = reactive({
